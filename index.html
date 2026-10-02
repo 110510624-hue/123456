@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-[#F7F4F0]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>臨床症狀與生理數據評估系統 (Morandi Nursing App)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        morandi: {
+                            gold: '#B89C72',
+                            goldLight: '#C8B28B',
+                            goldBg: '#F5F0E6',
+                            rose: '#B28888',
+                            roseHover: '#9E7474',
+                            roseLight: '#F3EAEA',
+                            roseBorder: '#E2D3D3',
+                            bg: '#F7F4F0',
+                            cardBg: '#FFFFFF',
+                            slate: '#3D3835',
+                            muted: '#7A736E',
+                            border: '#E8E2DC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .touch-active:active {
+            transform: scale(0.97);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F7F4F0;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #D8CCC4;
+            border-radius: 4px;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full text-morandi-slate flex flex-col font-sans selection:bg-[#C8B28B] selection:text-white">
+
+    <!-- Top Header Navigation Bar (Morandi Gold/Warm Ochre) -->
+    <header class="bg-gradient-to-r from-[#B89C72] via-[#C0A77E] to-[#C8B28B] text-white sticky top-0 z-30 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shadow-inner">
+                    <i class="fa-solid fa-user-nurse text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight leading-tight text-white">臨床症狀與生理數據評估系統</h1>
+                    <p class="text-[11px] sm:text-xs text-white/90 flex items-center gap-1 font-light">
+                        <span class="w-2 h-2 rounded-full bg-amber-100 inline-block animate-pulse"></span>
+                        莫蘭迪護理臨床分流與決策支援
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="window.print()" title="列印交班評估單" class="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs font-medium transition flex items-center gap-1.5 touch-active shadow-2xs">
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden sm:inline">列印交班單</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Responsive App Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+        
+        <!-- Left Column: Input Form (Vitals & Symptoms) -->
+        <section class="lg:col-span-6 bg-white rounded-2xl shadow-xs border border-morandi-border p-4 sm:p-6 flex flex-col justify-between no-print">
+            <div>
+                <!-- Section Header -->
+                <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-morandi-border">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-7 h-7 rounded-lg bg-morandi-goldBg text-morandi-gold font-bold text-xs flex items-center justify-center border border-[#E5DBCB]">1</span>
+                        <h2 class="text-base sm:text-lg font-bold text-morandi-slate">生理數據與症狀點選</h2>
+                    </div>
+                    <button onclick="resetAllInputs()" class="text-xs text-morandi-rose hover:text-morandi-roseHover bg-morandi-roseLight px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 font-medium touch-active border border-morandi-roseBorder">
+                        <i class="fa-solid fa-rotate-right"></i> 重置清空
+                    </button>
+                </div>
+
+                <!-- Patient Vitals Card -->
+                <div class="mb-5 bg-[#FBF9F7] p-3.5 sm:p-4 rounded-xl border border-morandi-border space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-morandi-slate flex items-center gap-1.5">
+                            <i class="fa-solid fa-hospital-user text-morandi-gold"></i> 病患生理數據 (Vitals)
+                        </span>
+                        <span id="bmi-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white text-morandi-muted border border-morandi-border">
+                            BMI: 未計算
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <!-- Bed / Patient ID -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-morandi-muted mb-1">床號 / 病歷號</label>
+                            <input type="text" id="patient-id" placeholder="例如: 902-1" class="w-full bg-white border border-morandi-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-morandi-gold text-morandi-slate font-medium">
+                        </div>
+                        <!-- Height (cm) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-morandi-muted mb-1">身高 (cm)</label>
+                            <input type="number" id="height-input" oninput="calculateBMI()" placeholder="例如: 168" min="30" max="250" class="w-full bg-white border border-morandi-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-morandi-gold text-morandi-slate font-medium">
+                        </div>
+                        <!-- Weight (kg) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-morandi-muted mb-1">體重 (kg)</label>
+                            <input type="number" id="weight-input" oninput="calculateBMI()" placeholder="例如: 60" min="2" max="300" class="w-full bg-white border border-morandi-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-morandi-gold text-morandi-slate font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-morandi-muted mb-3 flex items-center justify-between">
+                    <span>請選擇下列 5 項臨床症狀（是 / 否）：</span>
+                </p>
+
+                <div class="space-y-2.5" id="symptoms-container">
+                    
+                    <!-- 1. 淋巴腺腫脹 -->
+                    <div class="p-3 sm:p-3.5 rounded-xl border border-morandi-border bg-white hover:border-[#D5C9BF] transition-all shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-[#EFE9E3] text-morandi-slate flex items-center justify-center text-sm shrink-0">
+                                    <i class="fa-solid fa-circle-nodes"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-morandi-slate text-sm block">淋巴腺腫脹</span>
+                                    <span class="text-[10px] text-morandi-muted">Swollen Lymph Nodes</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#F5F2EF] p-1 rounded-xl self-end sm:self-auto w-full sm:w-auto justify-end border border-morandi-border">
+                                <button type="button" onclick="setSymptom('lymph', 'yes')" id="btn-lymph-yes" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">是 (Yes)</button>
+                                <button type="button" onclick="setSymptom('lymph', 'no')" id="btn-lymph-no" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">否 (No)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 發燒 -->
+                    <div class="p-3 sm:p-3.5 rounded-xl border border-morandi-border bg-white hover:border-[#D5C9BF] transition-all shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-[#F3EAEA] text-morandi-rose flex items-center justify-center text-sm shrink-0">
+                                    <i class="fa-solid fa-temperature-high"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-morandi-slate text-sm block">發燒</span>
+                                    <span class="text-[10px] text-morandi-muted">Fever</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#F5F2EF] p-1 rounded-xl self-end sm:self-auto w-full sm:w-auto justify-end border border-morandi-border">
+                                <button type="button" onclick="setSymptom('fever', 'yes')" id="btn-fever-yes" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">是 (Yes)</button>
+                                <button type="button" onclick="setSymptom('fever', 'no')" id="btn-fever-no" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">否 (No)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 喉嚨痛 -->
+                    <div class="p-3 sm:p-3.5 rounded-xl border border-morandi-border bg-white hover:border-[#D5C9BF] transition-all shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-[#EAE2D8] text-[#8C7A6B] flex items-center justify-center text-sm shrink-0">
+                                    <i class="fa-solid fa-head-side-cough"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-morandi-slate text-sm block">喉嚨痛</span>
+                                    <span class="text-[10px] text-morandi-muted">Sore Throat</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#F5F2EF] p-1 rounded-xl self-end sm:self-auto w-full sm:w-auto justify-end border border-morandi-border">
+                                <button type="button" onclick="setSymptom('sore_throat', 'yes')" id="btn-sore_throat-yes" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">是 (Yes)</button>
+                                <button type="button" onclick="setSymptom('sore_throat', 'no')" id="btn-sore_throat-no" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">否 (No)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 充血 -->
+                    <div class="p-3 sm:p-3.5 rounded-xl border border-morandi-border bg-white hover:border-[#D5C9BF] transition-all shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-[#E2E6E8] text-[#637882] flex items-center justify-center text-sm shrink-0">
+                                    <i class="fa-solid fa-eye"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-morandi-slate text-sm block">充血</span>
+                                    <span class="text-[10px] text-morandi-muted">Congestion</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#F5F2EF] p-1 rounded-xl self-end sm:self-auto w-full sm:w-auto justify-end border border-morandi-border">
+                                <button type="button" onclick="setSymptom('congestion', 'yes')" id="btn-congestion-yes" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">是 (Yes)</button>
+                                <button type="button" onclick="setSymptom('congestion', 'no')" id="btn-congestion-no" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">否 (No)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. 頭痛 -->
+                    <div class="p-3 sm:p-3.5 rounded-xl border border-morandi-border bg-white hover:border-[#D5C9BF] transition-all shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-[#E6E2E8] text-[#7B6E85] flex items-center justify-center text-sm shrink-0">
+                                    <i class="fa-solid fa-brain"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-morandi-slate text-sm block">頭痛</span>
+                                    <span class="text-[10px] text-morandi-muted">Headache</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#F5F2EF] p-1 rounded-xl self-end sm:self-auto w-full sm:w-auto justify-end border border-morandi-border">
+                                <button type="button" onclick="setSymptom('headache', 'yes')" id="btn-headache-yes" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">是 (Yes)</button>
+                                <button type="button" onclick="setSymptom('headache', 'no')" id="btn-headache-no" class="flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active">否 (No)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer Morandi Banner -->
+            <div class="mt-4 p-3 bg-[#F8F5F2] border border-morandi-border rounded-xl text-xs text-morandi-slate flex items-start gap-2">
+                <i class="fa-solid fa-circle-info text-morandi-gold mt-0.5 text-sm shrink-0"></i>
+                <div class="leading-relaxed">
+                    本系統依據 C4.5 分類規則即時進行診斷推導。BMI 體重過輕/正常/過重/肥胖區間遵循衛生福利部標準。
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Diagnostic Outcome & Nursing Actions & Shift Log -->
+        <section class="lg:col-span-6 flex flex-col space-y-4 sm:space-y-6">
+            
+            <!-- Result Card -->
+            <div class="bg-white rounded-2xl shadow-xs border border-morandi-border p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                <div>
+                    <!-- Panel Header -->
+                    <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-morandi-border">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-morandi-goldBg text-morandi-gold font-bold text-xs flex items-center justify-center border border-[#E5DBCB]">2</span>
+                            <h2 class="text-base sm:text-lg font-bold text-morandi-slate">診斷評估結果</h2>
+                        </div>
+                        <span id="status-tag" class="text-xs px-2.5 py-1 rounded-full bg-[#F5F2EF] text-morandi-muted font-medium border border-morandi-border">
+                            未點選症狀
+                        </span>
+                    </div>
+
+                    <!-- Mandatory Blank State: Default when no symptoms selected -->
+                    <div id="result-empty" class="py-12 sm:py-14 flex flex-col items-center justify-center text-center px-4">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-morandi-goldBg text-morandi-gold flex items-center justify-center text-3xl mb-3 shadow-inner border border-[#E8DFC9]">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <h3 class="text-sm sm:text-base font-bold text-morandi-slate">診斷結果目前為空白</h3>
+                        <p class="text-xs text-morandi-muted max-w-xs mt-1 leading-relaxed">
+                            請在左側點選患者之症狀與生理數據，系統將即時產出臨床診斷與護理建議。
+                        </p>
+                    </div>
+
+                    <!-- Active Diagnostic Output Box -->
+                    <div id="result-content" class="hidden space-y-4">
+                        
+                        <!-- Primary Diagnosis Card -->
+                        <div id="diag-badge-card" class="p-4 sm:p-5 rounded-2xl border flex flex-col items-center text-center transition-all shadow-xs">
+                            <div id="diag-icon-wrapper" class="w-12 h-12 rounded-full flex items-center justify-center text-xl mb-2 shadow-xs">
+                                <i id="diag-icon" class="fa-solid fa-notes-medical"></i>
+                            </div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-morandi-muted mb-0.5">臨床決策推導結論</span>
+                            <h3 id="diag-title" class="text-xl sm:text-2xl font-black mb-1">--</h3>
+                            <p id="diag-desc" class="text-xs max-w-md leading-relaxed mb-2 text-morandi-slate/90"></p>
+                            
+                            <!-- Vitals Summary Badge -->
+                            <div id="diag-vitals-summary" class="text-xs px-3 py-1 bg-white/80 border border-morandi-border rounded-full text-morandi-slate font-semibold flex items-center gap-2 shadow-2xs">
+                                <i class="fa-solid fa-weight-scale text-morandi-gold"></i>
+                                <span id="summary-vitals-text">身高體重: 未輸入</span>
+                            </div>
+                        </div>
+
+                        <!-- Nursing Care Interventions -->
+                        <div>
+                            <h4 class="text-xs font-bold text-morandi-slate mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-clipboard-check text-morandi-rose"></i> 建議護理措施 (Nursing Interventions)
+                            </h4>
+                            <ul id="care-actions" class="space-y-1.5 text-xs text-morandi-slate">
+                                <!-- Dynamic interventions inserted here -->
+                            </ul>
+                        </div>
+
+                        <!-- Quick Save Record Button -->
+                        <div class="pt-2 no-print">
+                            <button onclick="saveCurrentRecord()" id="btn-save-record" class="w-full py-2.5 bg-morandi-rose hover:bg-morandi-roseHover active:scale-[0.98] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition touch-active">
+                                <i class="fa-solid fa-bookmark"></i> 儲存此筆評估至當班紀錄 (Save Shift Log)
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shift Patient Assessment History Card -->
+            <div class="bg-white rounded-2xl shadow-xs border border-morandi-border p-4 sm:p-5 no-print">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-morandi-border">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-morandi-rose text-sm"></i>
+                        <h3 class="text-sm font-bold text-morandi-slate">當班護理評估紀錄 (Shift Log)</h3>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="exportCSV()" class="text-[11px] text-morandi-gold hover:underline font-medium">
+                            <i class="fa-solid fa-file-csv"></i> 匯出 CSV
+                        </button>
+                        <button onclick="clearHistoryLog()" class="text-[11px] text-morandi-rose hover:underline font-medium">
+                            清空紀錄
+                        </button>
+                    </div>
+                </div>
+
+                <div class="max-h-48 overflow-y-auto custom-scrollbar border border-morandi-border rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-[#F8F5F2] text-morandi-muted font-medium sticky top-0 border-b border-morandi-border">
+                            <tr>
+                                <th class="p-2 pl-3">時間 / 床號</th>
+                                <th class="p-2">BMI評估</th>
+                                <th class="p-2">診斷結果</th>
+                                <th class="p-2 pr-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-log-body" class="divide-y divide-morandi-border text-morandi-slate">
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-morandi-muted italic">尚無當班紀錄</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Print-Only Printable Handover Template -->
+    <div class="hidden print-only p-8 text-morandi-slate bg-white">
+        <div class="border-b-2 border-morandi-gold pb-4 mb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-2xl font-bold text-morandi-slate">臨床症狀與生理數據評估報告單</h1>
+                <p class="text-xs text-morandi-muted mt-1">護理臨床決策支援與交班紀錄 (Nursing Assessment Log)</p>
+            </div>
+            <div class="text-right text-xs">
+                <p>列印時間：<span id="print-datetime"></span></p>
+                <p>護理人員簽章：__________________</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6 text-xs border border-morandi-border p-4 rounded-xl bg-morandi-bg/40">
+            <div><strong>病人床號/編號：</strong> <span id="print-patient-id">--</span></div>
+            <div><strong>身高 / 體重：</strong> <span id="print-height-weight">-- cm / -- kg</span></div>
+            <div><strong>BMI 數據：</strong> <span id="print-bmi">--</span></div>
+            <div><strong>評估狀態：</strong> 已完成 C4.5 臨床診斷推導</div>
+        </div>
+
+        <h3 class="font-bold text-sm mb-2 border-b pb-1 text-morandi-slate">一、 5 項症狀評估紀錄</h3>
+        <table class="w-full text-xs border-collapse border border-morandi-border mb-6">
+            <thead class="bg-[#F5F0E6]">
+                <tr>
+                    <th class="border border-morandi-border p-2 text-left">症狀名稱</th>
+                    <th class="border border-morandi-border p-2 text-center">評估結果</th>
+                </tr>
+            </thead>
+            <tbody id="print-symptoms-table">
+            </tbody>
+        </table>
+
+        <h3 class="font-bold text-sm mb-2 border-b pb-1 text-morandi-slate">二、 診斷結果</h3>
+        <div class="border border-morandi-border p-4 rounded-xl mb-6 bg-[#F8F5F2]">
+            <p class="text-base font-bold text-morandi-slate mb-1">評估診斷：<span id="print-diag-title">--</span></p>
+            <p class="text-xs text-morandi-muted mb-2" id="print-diag-desc"></p>
+        </div>
+
+        <h3 class="font-bold text-sm mb-2 border-b pb-1 text-morandi-slate">三、 建議護理措施</h3>
+        <ul id="print-care-actions" class="list-disc pl-5 text-xs space-y-1 text-morandi-slate">
+        </ul>
+    </div>
+
+    <script>
+        // Symptoms State (null = unselected, 'yes', 'no')
+        const symptomsState = {
+            lymph: null,        // 淋巴腺腫脹
+            fever: null,        // 發燒
+            sore_throat: null,  // 喉嚨痛
+            congestion: null,   // 充血
+            headache: null      // 頭痛
+        };
+
+        // Current Calculated BMI Object
+        let currentBMI = {
+            val: null,
+            category: '',
+            colorClass: ''
+        };
+
+        // Morandi Color Care Knowledge Base
+        const careProtocols = {
+            '鏈球菌性喉炎': {
+                badgeClass: 'bg-[#F4ECEC] border-[#E2D3D3] text-[#7A4B4B]',
+                iconClass: 'bg-[#B28888] text-white',
+                icon: 'fa-virus-covid',
+                description: '急性細菌性感染，常見發燒與淋巴腺腫大。需高度留意鏈球菌併發症與完整抗生素療程。',
+                actions: [
+                    '協助安排咽喉拭子培養 (Throat Culture) 或 Rapid Antigen Test 篩檢。',
+                    '依醫囑給予完整的抗生素治療，衛教病人不可自行停藥。',
+                    '鼓勵溫鹽水漱口及充分休息，評估體溫與疼痛程度。',
+                    '密切觀察有無呼吸困難、吞嚥困難或高燒不退等急徵。'
+                ]
+            },
+            '感冒': {
+                badgeClass: 'bg-[#F2ECE6] border-[#DECFC2] text-[#7D6B5A]',
+                iconClass: 'bg-[#B89C72] text-white',
+                icon: 'fa-head-side-mask',
+                description: '常見上呼吸道病毒性感染，伴隨發燒及咳嗽喉嚨症狀。',
+                actions: [
+                    '鼓勵每日充足水分攝取 (每小時約 150-200ml)，促進代謝。',
+                    '定期監測體溫變化，發燒時依醫囑給予解熱鎮痛成分藥物。',
+                    '衛教佩戴口罩與手部衛生，防止病房交叉感染。',
+                    '觀察有無併發中耳炎、鼻竇炎或支氣管炎情況。'
+                ]
+            },
+            '過敏': {
+                badgeClass: 'bg-[#EBF0F2] border-[#D1DCDE] text-[#4A646C]',
+                iconClass: 'bg-[#6B8A94] text-white',
+                icon: 'fa-leaf',
+                description: '環境或季節性過敏反應，通常無發燒及淋巴腺腫大症狀。',
+                actions: [
+                    '協助評估並避開可能之過敏原 (如花粉、塵蟎、毛屑等)。',
+                    '依醫囑給予抗組織胺 (Antihistamine) 藥物以緩解症狀。',
+                    '衛教保持室內空氣清淨及適當之相對濕度。',
+                    '若有鼻塞或黏膜充血，可給予適度蒸氣吸入緩解不適。'
+                ]
+            }
+        };
+
+        // Initialize App on DOM Load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUIButtons();
+            runClinicalInference();
+            loadHistoryLogs();
+        });
+
+        // Calculate BMI according to Taiwan MOHW standards
+        function calculateBMI() {
+            const h = parseFloat(document.getElementById('height-input').value);
+            const w = parseFloat(document.getElementById('weight-input').value);
+            const badgeEl = document.getElementById('bmi-badge');
+
+            if (h > 0 && w > 0) {
+                const bmiVal = (w / ((h / 100) * (h / 100))).toFixed(1);
+                let cat = '';
+                let badgeStyle = '';
+
+                if (bmiVal < 18.5) {
+                    cat = '過輕';
+                    badgeStyle = 'bg-[#F5F0E6] text-[#8C7A5E] border border-[#DFD3C1]';
+                } else if (bmiVal >= 18.5 && bmiVal < 24) {
+                    cat = '正常';
+                    badgeStyle = 'bg-[#EAE2D8] text-[#6E5D4F] border border-[#D5C9BD]';
+                } else if (bmiVal >= 24 && bmiVal < 27) {
+                    cat = '過重';
+                    badgeStyle = 'bg-[#F2ECE6] text-[#7A6452] border border-[#DAC8B8]';
+                } else if (bmiVal >= 27 && bmiVal < 30) {
+                    cat = '輕度肥胖';
+                    badgeStyle = 'bg-[#F3EAEA] text-[#8C5E5E] border border-[#DFCDCD]';
+                } else if (bmiVal >= 30 && bmiVal < 35) {
+                    cat = '中度肥胖';
+                    badgeStyle = 'bg-[#EBDDDD] text-[#7A4B4B] border border-[#D8BCBC]';
+                } else {
+                    cat = '重度肥胖';
+                    badgeStyle = 'bg-[#B28888] text-white border border-[#9E7474] font-bold';
+                }
+
+                currentBMI = { val: bmiVal, category: cat, colorClass: badgeStyle };
+                badgeEl.className = `text-[11px] font-bold px-2.5 py-0.5 rounded-full ${badgeStyle}`;
+                badgeEl.innerText = `BMI: ${bmiVal} (${cat})`;
+            } else {
+                currentBMI = { val: null, category: '', colorClass: '' };
+                badgeEl.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white text-morandi-muted border border-morandi-border';
+                badgeEl.innerText = 'BMI: 未計算';
+            }
+
+            updateVitalsSummaryLine();
+        }
+
+        function updateVitalsSummaryLine() {
+            const h = document.getElementById('height-input').value;
+            const w = document.getElementById('weight-input').value;
+            const summaryEl = document.getElementById('summary-vitals-text');
+
+            if (h && w && currentBMI.val) {
+                summaryEl.innerText = `身高 ${h}cm | 體重 ${w}kg | BMI ${currentBMI.val} (${currentBMI.category})`;
+            } else if (h || w) {
+                summaryEl.innerText = `身高: ${h || '--'} cm | 體重: ${w || '--'} kg`;
+            } else {
+                summaryEl.innerText = `生理數據: 未輸入身高體重`;
+            }
+        }
+
+        function setSymptom(symptomKey, value) {
+            if (symptomsState[symptomKey] === value) {
+                symptomsState[symptomKey] = null;
+            } else {
+                symptomsState[symptomKey] = value;
+            }
+
+            updateUIButtons();
+            runClinicalInference();
+        }
+
+        function resetAllInputs() {
+            Object.keys(symptomsState).forEach(key => {
+                symptomsState[key] = null;
+            });
+            document.getElementById('patient-id').value = '';
+            document.getElementById('height-input').value = '';
+            document.getElementById('weight-input').value = '';
+            calculateBMI();
+            updateUIButtons();
+            runClinicalInference();
+        }
+
+        function updateUIButtons() {
+            const keys = ['lymph', 'fever', 'sore_throat', 'congestion', 'headache'];
+            
+            keys.forEach(key => {
+                const btnYes = document.getElementById(`btn-${key}-yes`);
+                const btnNo = document.getElementById(`btn-${key}-no`);
+                const val = symptomsState[key];
+
+                btnYes.className = "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active hover:bg-morandi-roseLight/60";
+                btnNo.className = "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-morandi-slate border border-transparent transition touch-active hover:bg-morandi-roseLight/60";
+
+                if (val === 'yes') {
+                    btnYes.className = "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white bg-morandi-rose shadow-2xs border border-[#9E7474] transition touch-active";
+                } else if (val === 'no') {
+                    btnNo.className = "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white bg-[#7E7873] shadow-2xs border border-[#68635F] transition touch-active";
+                }
+            });
+        }
+
+        // Diagnostic Inference based on exact C4.5 Decision Tree Rules
+        function runClinicalInference() {
+            const emptyStateEl = document.getElementById('result-empty');
+            const contentStateEl = document.getElementById('result-content');
+            const statusTagEl = document.getElementById('status-tag');
+
+            const hasAnySelection = Object.values(symptomsState).some(val => val !== null);
+
+            // Mandatory Default State: Blank Output when no symptoms selected
+            if (!hasAnySelection) {
+                emptyStateEl.classList.remove('hidden');
+                contentStateEl.classList.add('hidden');
+                statusTagEl.className = "text-xs px-2.5 py-1 rounded-full bg-[#F5F2EF] text-morandi-muted font-medium border border-morandi-border";
+                statusTagEl.innerText = "未點選症狀";
+                return;
+            }
+
+            let diagnosis = null;
+
+            // Exact C4.5 Rules:
+            // Rule 1: IF 淋巴腺腫脹 = yes THEN 鏈球菌性喉炎
+            // Rule 2: IF 淋巴腺腫脹 = no AND 發燒 = yes THEN 感冒
+            // Rule 3: IF 淋巴腺腫脹 = no AND 發燒 = no THEN 過敏
+            if (symptomsState.lymph === 'yes') {
+                diagnosis = '鏈球菌性喉炎';
+            } else if (symptomsState.lymph === 'no') {
+                if (symptomsState.fever === 'yes') {
+                    diagnosis = '感冒';
+                } else if (symptomsState.fever === 'no') {
+                    diagnosis = '過敏';
+                } else {
+                    diagnosis = '待評估「發燒」狀態';
+                }
+            } else {
+                diagnosis = '待評估「淋巴腺腫脹」狀態';
+            }
+
+            emptyStateEl.classList.add('hidden');
+            contentStateEl.classList.remove('hidden');
+
+            const titleEl = document.getElementById('diag-title');
+            const descEl = document.getElementById('diag-desc');
+            const badgeCard = document.getElementById('diag-badge-card');
+            const iconWrapper = document.getElementById('diag-icon-wrapper');
+            const iconEl = document.getElementById('diag-icon');
+            const careListEl = document.getElementById('care-actions');
+
+            titleEl.innerText = diagnosis;
+            updateVitalsSummaryLine();
+
+            if (careProtocols[diagnosis]) {
+                const protocol = careProtocols[diagnosis];
+
+                statusTagEl.className = "text-xs px-2.5 py-1 rounded-full bg-morandi-goldBg text-morandi-gold font-bold border border-[#E2D6C3]";
+                statusTagEl.innerText = "評估完成";
+
+                badgeCard.className = `p-4 sm:p-5 rounded-2xl border flex flex-col items-center text-center transition-all shadow-xs ${protocol.badgeClass}`;
+                iconWrapper.className = `w-12 h-12 rounded-full flex items-center justify-center text-xl mb-2 shadow-xs ${protocol.iconClass}`;
+                iconEl.className = `fa-solid ${protocol.icon}`;
+                descEl.innerText = protocol.description;
+
+                careListEl.innerHTML = protocol.actions.map(act => `
+                    <li class="flex items-start gap-2 bg-[#F8F5F2] p-2.5 rounded-lg border border-morandi-border">
+                        <i class="fa-solid fa-angle-right text-morandi-rose mt-0.5 shrink-0"></i>
+                        <span class="leading-relaxed">${act}</span>
+                    </li>
+                `).join('');
+
+                updatePrintTemplate(diagnosis, protocol);
+            } else {
+                statusTagEl.className = "text-xs px-2.5 py-1 rounded-full bg-[#F5F2EF] text-morandi-muted font-medium border border-morandi-border";
+                statusTagEl.innerText = "評估中";
+
+                badgeCard.className = "p-4 sm:p-5 rounded-2xl border border-morandi-border bg-[#FBF9F7] flex flex-col items-center text-center transition-all";
+                iconWrapper.className = "w-12 h-12 rounded-full bg-morandi-goldBg text-morandi-gold flex items-center justify-center text-xl mb-2";
+                iconEl.className = "fa-solid fa-spinner animate-spin";
+                descEl.innerText = "請繼續點選關鍵症狀以完成診斷推論。";
+
+                careListEl.innerHTML = `<li class="text-morandi-muted italic">請繼續點選症狀以取得護理指引。</li>`;
+            }
+        }
+
+        // Save Shift Record
+        function saveCurrentRecord() {
+            const diagTitle = document.getElementById('diag-title').innerText;
+            if (!careProtocols[diagTitle]) {
+                alert('請先完成完整症狀點選以獲得診斷結果。');
+                return;
+            }
+
+            const patientId = document.getElementById('patient-id').value.trim() || '未填寫';
+            const height = document.getElementById('height-input').value;
+            const weight = document.getElementById('weight-input').value;
+            const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+            const record = {
+                id: Date.now(),
+                patientId: patientId,
+                time: timestamp,
+                height: height || '--',
+                weight: weight || '--',
+                bmi: currentBMI.val ? `${currentBMI.val} (${currentBMI.category})` : '未計算',
+                diagnosis: diagTitle
+            };
+
+            const history = JSON.parse(localStorage.getItem('morandi_shift_log') || '[]');
+            history.unshift(record);
+            localStorage.setItem('morandi_shift_log', JSON.stringify(history));
+
+            loadHistoryLogs();
+            alert(`已成功儲存病人 [${patientId}] 之評估紀錄！`);
+        }
+
+        function loadHistoryLogs() {
+            const history = JSON.parse(localStorage.getItem('morandi_shift_log') || '[]');
+            const tbody = document.getElementById('history-log-body');
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-morandi-muted italic">尚無當班紀錄</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = history.map(item => `
+                <tr class="hover:bg-[#F8F5F2] transition">
+                    <td class="p-2 pl-3">
+                        <div class="font-bold text-morandi-slate text-xs">${item.patientId}</div>
+                        <div class="text-[10px] text-morandi-muted font-mono">${item.time}</div>
+                    </td>
+                    <td class="p-2">
+                        <span class="text-xs font-semibold text-morandi-slate">${item.bmi}</span>
+                        <div class="text-[10px] text-morandi-muted">${item.height}cm / ${item.weight}kg</div>
+                    </td>
+                    <td class="p-2">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-bold ${getDiagBadgeStyle(item.diagnosis)}">
+                            ${item.diagnosis}
+                        </span>
+                    </td>
+                    <td class="p-2 pr-3 text-right">
+                        <button onclick="deleteLogItem(${item.id})" class="text-morandi-rose hover:text-morandi-roseHover p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getDiagBadgeStyle(diag) {
+            if (diag === '鏈球菌性喉炎') return 'bg-[#F4ECEC] text-[#7A4B4B]';
+            if (diag === '感冒') return 'bg-[#F2ECE6] text-[#7D6B5A]';
+            if (diag === '過敏') return 'bg-[#EBF0F2] text-[#4A646C]';
+            return 'bg-slate-100 text-slate-700';
+        }
+
+        function deleteLogItem(id) {
+            let history = JSON.parse(localStorage.getItem('morandi_shift_log') || '[]');
+            history = history.filter(item => item.id !== id);
+            localStorage.setItem('morandi_shift_log', JSON.stringify(history));
+            loadHistoryLogs();
+        }
+
+        function clearHistoryLog() {
+            if (confirm('確定要清空當班所有的評估紀錄嗎？')) {
+                localStorage.removeItem('morandi_shift_log');
+                loadHistoryLogs();
+            }
+        }
+
+        // Export Logs to CSV
+        function exportCSV() {
+            const history = JSON.parse(localStorage.getItem('morandi_shift_log') || '[]');
+            if (history.length === 0) {
+                alert('目前沒有評估紀錄可供匯出。');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "時間,床號/病歷號,身高(cm),體重(kg),BMI評估,診斷結果\n";
+
+            history.forEach(row => {
+                csvContent += `"${row.time}","${row.patientId}","${row.height}","${row.weight}","${row.bmi}","${row.diagnosis}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `護理評估當班紀錄_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updatePrintTemplate(diagTitle, protocol) {
+            const h = document.getElementById('height-input').value;
+            const w = document.getElementById('weight-input').value;
+
+            document.getElementById('print-datetime').innerText = new Date().toLocaleString('zh-TW');
+            document.getElementById('print-patient-id').innerText = document.getElementById('patient-id').value.trim() || '未指定';
+            document.getElementById('print-height-weight').innerText = `${h || '--'} cm / ${w || '--'} kg`;
+            document.getElementById('print-bmi').innerText = currentBMI.val ? `${currentBMI.val} (${currentBMI.category})` : '未計算';
+            document.getElementById('print-diag-title').innerText = diagTitle;
+            document.getElementById('print-diag-desc').innerText = protocol.description;
+
+            const nameMap = {
+                lymph: '淋巴腺腫脹',
+                fever: '發燒',
+                sore_throat: '喉嚨痛',
+                congestion: '充血',
+                headache: '頭痛'
+            };
+
+            const tbody = document.getElementById('print-symptoms-table');
+            tbody.innerHTML = Object.keys(symptomsState).map(key => {
+                const val = symptomsState[key];
+                const text = val === 'yes' ? '是 (Yes)' : val === 'no' ? '否 (No)' : '未評估';
+                return `
+                    <tr>
+                        <td class="border border-morandi-border p-2 font-bold">${nameMap[key]}</td>
+                        <td class="border border-morandi-border p-2 text-center">${text}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const careUl = document.getElementById('print-care-actions');
+            careUl.innerHTML = protocol.actions.map(act => `<li>${act}</li>`).join('');
+        }
+    </script>
+</body>
+</html>
